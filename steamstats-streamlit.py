@@ -12,6 +12,16 @@ st.set_page_config(layout="wide")
 
 st.title("CS:GO Steam Stats")
 
+
+# Colors
+blue = '#68a3e5'
+orange = '#eda338'
+gray = '#3c3c3c'
+yellow = '#e6f13d'
+purple = '#803ca1'
+green = '#109856'
+
+
 steamid = st.text_input("Steam ID", "76561198020908104")
 # key = st.text_input("Steam API Key", "AA1A1F692E6D48BFC0F23FB2F7313A2B")
 
@@ -141,11 +151,11 @@ if steamid and key:
     with col3:
         kills_df = pd.DataFrame(list(total_kills_ordered.items())[:limit], columns=['weapon', 'kills'])
 
-        bar_chart_kills = alt.Chart(kills_df, title='Kills').mark_bar(opacity=0.7).encode(
+        bar_chart_kills = alt.Chart(kills_df, title='Kills').mark_bar(opacity=0.8).encode(
             alt.X('weapon', sort=alt.EncodingSortField(field="kills", op="count", order='ascending'),
                   axis=alt.Axis(grid=False, title=None)),
             alt.Y('kills', axis=alt.Axis(grid=True, title=None)),
-            color=alt.Color('weapon', scale=alt.Scale(range=['#4c78a8']), legend=None)
+            color=alt.Color('weapon', scale=alt.Scale(range=[blue]), legend=None)
         )
 
         text_0 = bar_chart_kills.mark_text(baseline='bottom', align='center').encode(text='kills')
@@ -173,10 +183,10 @@ if steamid and key:
         test_data_melted = pd.melt(combined_df, id_vars='weapon',
                                    var_name="source", value_name="value_numbers")
 
-        bar_chart_shots_2 = alt.Chart(test_data_melted, title='Shots vs Hits').mark_bar(opacity=0.7).encode(
+        bar_chart_shots_2 = alt.Chart(test_data_melted, title='Shots vs Hits').mark_bar(opacity=0.8).encode(
             x=alt.X('weapon', sort=['value_numbers'], axis=alt.Axis(grid=False, title=None)),
             y=alt.Y('value_numbers', axis=alt.Axis(grid=True, title=None), stack=None),
-            color=alt.Color('source', scale=alt.Scale(range=['#f63366', '#4c78a8']))
+            color=alt.Color('source', scale=alt.Scale(range=[orange, blue]))
         )
 
         text_1 = bar_chart_shots_2.mark_text(baseline='bottom', align='center').encode(text='value_numbers')
@@ -207,10 +217,10 @@ if steamid and key:
 
     weapon_df = test_data_melted_2[test_data_melted_2['weapon'] == weapon]
 
-    bar_chart_weapon = alt.Chart(weapon_df, title=f'Stats for {weapon}').mark_bar(opacity=0.7).encode(
+    bar_chart_weapon = alt.Chart(weapon_df, title=f'Stats for {weapon}').mark_bar(opacity=0.8).encode(
         x=alt.X('source', sort=['value_numbers'], axis=None, title=''),
         y=alt.Y('value_numbers:Q', title=''),
-        color=alt.Color('source', scale=alt.Scale(range=['#31333f', '#f63366', '#4c78a8']))
+        color=alt.Color('source', scale=alt.Scale(range=[orange, gray, blue]))
     )
 
     text_2 = bar_chart_weapon.mark_text(baseline='bottom', align='center', size=15).encode(text='value_numbers')
