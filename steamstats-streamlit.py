@@ -163,7 +163,7 @@ if steamid and key:
             color=alt.Color('weapon', scale=alt.Scale(range=[blue]), legend=None)
         )
 
-        text_0 = bar_chart_kills.mark_text(baseline='bottom', align='center').encode(text='kills')
+        text_0 = bar_chart_kills.mark_text(baseline='bottom', align='center', dy=-3).encode(text='kills')
 
         tmp_chart_0 = alt.layer(bar_chart_kills, text_0).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(
             fontSize=20).configure_view(stroke='transparent')
@@ -194,7 +194,7 @@ if steamid and key:
             color=alt.Color('source', scale=alt.Scale(range=[orange, blue]))
         )
 
-        text_1 = bar_chart_shots_2.mark_text(baseline='bottom', align='center').encode(text='value_numbers')
+        text_1 = bar_chart_shots_2.mark_text(baseline='bottom', align='center', dy=-3).encode(text='value_numbers')
 
         tmp_chart_1 = alt.layer(bar_chart_shots_2, text_1).configure_axis(
             labelFontSize=12, titleFontSize=16).configure_title(
@@ -228,9 +228,39 @@ if steamid and key:
         color=alt.Color('source', scale=alt.Scale(range=[orange, gray, blue]))
     )
 
-    text_2 = bar_chart_weapon.mark_text(baseline='bottom', align='center', size=15).encode(text='value_numbers')
+    text_2 = bar_chart_weapon.mark_text(baseline='bottom', align='center', size=15, dy=-5).encode(text='value_numbers')
 
     tmp_chart_2 = alt.layer(bar_chart_weapon, text_2).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(
         fontSize=20).configure_view(stroke='transparent').configure_legend(orient='bottom')
 
     st.altair_chart(tmp_chart_2, use_container_width=True)
+    # ----------------------------------------------------------------------------- #
+
+    col5, col6 = st.beta_columns(2)
+
+    # --------------------- Kills vs Deaths ----------------------- #
+    tkk_name, tkk_val, total_kills_ordered = get_ordered_numbers(r, 'total_kills', truncate_name=False)
+    tdd_name, tdd_val, total_deaths_ordered = get_ordered_numbers(r, 'total_deaths', truncate_name=False)
+
+    kd_dict = {
+        'kills': total_kills_ordered['total_kills'],
+        'deaths': total_deaths_ordered['total_deaths']
+    }
+
+    kd_df = pd.DataFrame(list(kd_dict.items()), columns=['name', 'value'])
+    kd_df.head()
+
+    bar_chart_kd = alt.Chart(kd_df, title=f'Kills vs Deaths').mark_bar(opacity=0.8, size=100).encode(
+        alt.Y('value:Q', title='',),
+        alt.X('name', sort=['value'], title='', axis=None),
+        color=alt.Color('name', scale=alt.Scale(range=[orange, blue]))
+    )
+
+    text_3 = bar_chart_kd.mark_text(baseline='bottom', align='center', size=15, dy=-5).encode(text='value')
+
+    tmp_chart_3 = alt.layer(bar_chart_kd, text_3).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(
+        fontSize=20).configure_view(stroke='transparent').configure_legend(
+            orient='bottom')
+
+    with col5:
+        st.altair_chart(tmp_chart_3, use_container_width=True)
