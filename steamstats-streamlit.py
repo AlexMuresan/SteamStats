@@ -32,7 +32,7 @@ key = 'AA1A1F692E6D48BFC0F23FB2F7313A2B'
 # key = 'AA1A1F692E6D48BFC0F23FB2F7313A2B'
 # # ---------------------------------------------- #
 
-col1, col2, col3 = st.beta_columns([1, 1.5, 1.5])
+col1, col2, col3, col4 = st.beta_columns([1, 1, 1, 1])
 
 
 def get_api_link(interface: str, method: str, version: str, **kwargs):
@@ -114,20 +114,25 @@ if steamid and key:
     adr = damage['total_damage_done'] / rounds['total_rounds_played']
     last_adr = damage['last_match_damage'] / last_rounds['last_match_rounds']
 
+    time_name, time_val, _ = get_ordered_numbers(r, 'time', truncate_name=False)
+
     img = urllib.request.urlopen(r_2['response']['players'][0]['avatarfull'])
     a = plt.imread(img, format='jpg')
 
     with col1:
         st.image(a)
-        st.write(r_2['response']['players'][0]['realname'])
 
     with col2:
+        st.write(r_2['response']['players'][0]['realname'])
+        st.write('Time played:', f"{int(time_val/3600)} hours")
+
+    with col3:
         st.write('Overall ADR:', f"{adr:.01f}")
         st.write('Last Match ADR:', f"{last_adr:.01f}")
         st.write('Overall KD Ratio:', f"{KD_ratio:.01f}")
         st.write('Last Match KD Ratio:', f"{last_match_kd:.01f}")
 
-    with col3:
+    with col4:
         st.write('Accuracy:', f"{acc:0.1f}%")
         st.write('Headshots:', f"{headshots['headshot']}")
         st.write('Headshot percentage:', f"{hs_perc:.01f}%")
