@@ -1,5 +1,6 @@
 import urllib
 import requests
+
 import numpy as np
 import pandas as pd
 import altair as alt
@@ -21,8 +22,7 @@ key = 'AA1A1F692E6D48BFC0F23FB2F7313A2B'
 # key = 'AA1A1F692E6D48BFC0F23FB2F7313A2B'
 # # ---------------------------------------------- #
 
-# col1, col2 = st.beta_columns([3, 1])
-col1, col2 = st.beta_columns([1, 3])
+col1, col2, col3 = st.beta_columns([1, 1.5, 1.5])
 
 
 def get_api_link(interface: str, method: str, version: str, **kwargs):
@@ -54,7 +54,18 @@ def get_ordered_numbers(r: dict, search_term: str, ignore_terms: list = None, hi
 
     items_ordered = {k: v for k, v in sorted(item_dict.items(), key=lambda item: item[1], reverse=high_to_low)}
     item_list = items_ordered.items()
-    name, number = zip(*item_list)
+
+    if bool(item_list):
+        name, number = zip(*item_list)
+    else:
+        print(f'No items match search term: "{search_term}"')
+        return None, None, None
+
+    if len(name) == 1:
+        name = name[0]
+
+    if len(number) == 1:
+        number = number[0]
 
     return name, number, items_ordered
 
@@ -75,17 +86,23 @@ if steamid and key:
     _, lm_k_val, lm_k = get_ordered_numbers(r, 'last_match_kills', truncate_name=False)
     _, lm_d_val, lm_d = get_ordered_numbers(r, 'last_match_deaths', truncate_name=False)
 
+    tk_name, tk_val, tk_ordered = get_ordered_numbers(r, 'total_kills')
+    headshot_name, headshot_val, headshot = get_ordered_numbers(r, 'headshot', truncate_name=False)
+    _, mvp_val, mvps = get_ordered_numbers(r, 'total_mvps', truncate_name=False)
+    tsf_name, tsf_val, _ = get_ordered_numbers(r, 'total_shots_fired', truncate_name=False)
+    tsh_name, tsh_val, _ = get_ordered_numbers(r, 'total_shots_hit', truncate_name=False)
+
+    acc = tsh_val * 100 / tsf_val
+
+    hs_perc = headshot_val * 100 / tk_ordered['kills']
+
     KD_ratio = kills_ratio['total_kills'] / deaths_ratio['total_deaths']
 
     last_match_team_won = 'Terrorist' if lm_t else 'Counter Terrorist'
-    last_match_kd = lm_k_val[0] / lm_d_val[0]
+    last_match_kd = lm_k_val / lm_d_val
 
     adr = damage['total_damage_done'] / rounds['total_rounds_played']
     last_adr = damage['last_match_damage'] / last_rounds['last_match_rounds']
-
-    print(f"lm_k_val[0]: {lm_k_val[0]}")
-    print(f"lm_d_val[0]: {lm_d_val[0]}")
-    print("last_match_rounds: ", last_rounds['last_match_rounds'])
 
     img = urllib.request.urlopen(r_2['response']['players'][0]['avatarfull'])
     a = plt.imread(img, format='jpg')
@@ -95,12 +112,16 @@ if steamid and key:
         st.write(r_2['response']['players'][0]['realname'])
 
     with col2:
-        st.write('Last match won as:', last_match_team_won)
+        st.write('Overall ADR:', f"{adr:.01f}")
+        st.write('Last Match ADR:', f"{last_adr:.01f}")
+        st.write('Overall KD Ratio:', f"{KD_ratio:.01f}")
+        st.write('Last Match KD Ratio:', f"{last_match_kd:.01f}")
+
+    with col3:
+        st.write('Accuracy:', f"{acc:0.1f}%")
         st.write('Headshots:', f"{headshots['headshot']}")
-        st.write('Overall ADR:', f"{adr:.03f}")
-        st.write('Last Match ADR:', f"{last_adr:.03f}")
-        st.write('Overall KD Ratio:', f"{KD_ratio:.03f}")
-        st.write('Last Match KD Ratio:', f"{last_match_kd:.03f}")
+        st.write('Headshot percentage:', f"{hs_perc:.01f}%")
+        st.write('MVPs:', f"{mvp_val}")
 
     # ---------------------- Kills / Weapon Barchart ---------------------- #
     st.text("")
@@ -113,76 +134,58 @@ if steamid and key:
     limit = st.slider('Number of weapons to display',
                       min_value=1,
                       max_value=len(total_kills_ordered.keys()),
-                      value=15)
+                      value=7)
 
-    kills_df = pd.DataFrame(list(total_kills_ordered.items())[:limit], columns=['weapon', 'kills'])
+    col3, col4 = st.beta_columns(2)
 
-    bar_chart_kills = alt.Chart(kills_df, title='Kills').mark_bar(opacity=0.7).encode(
-        alt.X('weapon', sort=alt.EncodingSortField(field="kills", op="count", order='ascending'),
-              axis=alt.Axis(grid=False, title=None)),
-        alt.Y('kills', axis=alt.Axis(grid=True, title=None)),
-        color=alt.Color('weapon', scale=alt.Scale(range=['#4c78a8']), legend=None)
-    )
+    with col3:
+        kills_df = pd.DataFrame(list(total_kills_ordered.items())[:limit], columns=['weapon', 'kills'])
 
-    text_0 = bar_chart_kills.mark_text(baseline='bottom', align='center').encode(text='kills')
+        bar_chart_kills = alt.Chart(kills_df, title='Kills').mark_bar(opacity=0.7).encode(
+            alt.X('weapon', sort=alt.EncodingSortField(field="kills", op="count", order='ascending'),
+                  axis=alt.Axis(grid=False, title=None)),
+            alt.Y('kills', axis=alt.Axis(grid=True, title=None)),
+            color=alt.Color('weapon', scale=alt.Scale(range=['#4c78a8']), legend=None)
+        )
 
-    tmp_chart_0 = alt.layer(bar_chart_kills, text_0).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(
-        fontSize=20).configure_view(stroke='transparent')
+        text_0 = bar_chart_kills.mark_text(baseline='bottom', align='center').encode(text='kills')
 
-    st.altair_chart(tmp_chart_0, use_container_width=True)
+        tmp_chart_0 = alt.layer(bar_chart_kills, text_0).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(
+            fontSize=20).configure_view(stroke='transparent')
+
+        st.altair_chart(tmp_chart_0, use_container_width=True)
     # ------------------------------------------------------------ #
 
     # ---------------------- Shots vs Hits / Weapon Barchart ---------------------- #
-    st.text("")
-    st.text("")
-    st.text("")
-    link = get_api_link('ISteamUserStats', 'GetUserStatsForGame', '2', key=key, steamid=steamid, appid='730')
-    r = requests.get(link).json()
+    with col4:
+        link = get_api_link('ISteamUserStats', 'GetUserStatsForGame', '2', key=key, steamid=steamid, appid='730')
+        r = requests.get(link).json()
 
-    ignore_terms = ['fired', '_hit', 'elite']
-    _, _, total_shots_ordered = get_ordered_numbers(r, 'total_shots_', ignore_terms)
-    _, _, total_hits_ordered = get_ordered_numbers(r, 'total_hits_')
+        ignore_terms = ['fired', '_hit', 'elite']
+        _, _, total_shots_ordered = get_ordered_numbers(r, 'total_shots_', ignore_terms)
+        _, _, total_hits_ordered = get_ordered_numbers(r, 'total_hits_')
 
-    shots_df = pd.DataFrame(list(total_shots_ordered.items())[:limit], columns=['weapon', 'shots'])
-    hits_df = pd.DataFrame(list(total_hits_ordered.items())[:limit], columns=['weapon', 'hits'])
+        shots_df = pd.DataFrame(list(total_shots_ordered.items())[:limit], columns=['weapon', 'shots'])
+        hits_df = pd.DataFrame(list(total_hits_ordered.items())[:limit], columns=['weapon', 'hits'])
 
-    combined_df = pd.merge(shots_df, hits_df, on='weapon')
+        combined_df = pd.merge(shots_df, hits_df, on='weapon')
 
-    test_data_melted = pd.melt(combined_df, id_vars='weapon',
-                               var_name="source", value_name="value_numbers")
+        test_data_melted = pd.melt(combined_df, id_vars='weapon',
+                                   var_name="source", value_name="value_numbers")
 
-    # bar_chart_shots = alt.Chart(test_data_melted, title='Shots per weapon used').mark_bar().encode(
-    #     column=alt.Column('weapon', spacing=5, sort=['value_numbers'],
-    #                       header=alt.Header(labelOrient="bottom",
-    #                                         titleOrient='bottom',
-    #                                         titleColor='white',
-    #                                         labelColor='white',
-    #                                         titleFontSize=20,
-    #                                         labelFontSize=12)),
-    #     x=alt.X('source', sort=['value_numbers'], axis=None),
-    #     y=alt.Y('value_numbers:Q', title=''),
-    #     color=alt.Color('source', scale=alt.Scale(range=['#f63366', '#4c78a8']))
-    # ).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(fontSize=20).configure_view(
-    #     stroke='transparent')
+        bar_chart_shots_2 = alt.Chart(test_data_melted, title='Shots vs Hits').mark_bar(opacity=0.7).encode(
+            x=alt.X('weapon', sort=['value_numbers'], axis=alt.Axis(grid=False, title=None)),
+            y=alt.Y('value_numbers', axis=alt.Axis(grid=True, title=None), stack=None),
+            color=alt.Color('source', scale=alt.Scale(range=['#f63366', '#4c78a8']))
+        )
 
-    # st.altair_chart(bar_chart_shots, use_container_width=False)
+        text_1 = bar_chart_shots_2.mark_text(baseline='bottom', align='center').encode(text='value_numbers')
 
-    bar_chart_shots_2 = alt.Chart(test_data_melted, title='Shots vs Hits').mark_bar(opacity=0.7).encode(
-        x=alt.X('weapon', sort=['value_numbers'], axis=alt.Axis(grid=False, title=None)),
-        y=alt.Y('value_numbers', axis=alt.Axis(grid=True, title=None), stack=None),
-        color=alt.Color('source', scale=alt.Scale(range=['#f63366', '#4c78a8']))
-    )
+        tmp_chart_1 = alt.layer(bar_chart_shots_2, text_1).configure_axis(
+            labelFontSize=12, titleFontSize=16).configure_title(
+            fontSize=20).configure_view(stroke='transparent').configure_legend(orient='right')
 
-    text_1 = bar_chart_shots_2.mark_text(baseline='bottom', align='center').encode(text='value_numbers')
-
-    tmp_chart_1 = alt.layer(bar_chart_shots_2, text_1).configure_axis(
-        labelFontSize=12, titleFontSize=16).configure_title(
-        fontSize=20).configure_view(stroke='transparent').configure_legend(orient='bottom')
-
-    st.altair_chart(tmp_chart_1, use_container_width=True)
-    st.text("")
-    st.text("")
-    st.text("")
+        st.altair_chart(tmp_chart_1, use_container_width=True)
     # ----------------------------------------------------------------------------- #
 
     weapons_list = sorted(list(total_shots_ordered.keys()))
