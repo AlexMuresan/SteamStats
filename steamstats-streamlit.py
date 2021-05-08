@@ -1,7 +1,6 @@
 import urllib
 import requests
 
-import numpy as np
 import pandas as pd
 import altair as alt
 import streamlit as st
@@ -44,7 +43,8 @@ def get_api_link(interface: str, method: str, version: str, **kwargs):
     return url
 
 
-def get_ordered_numbers(r: dict, search_term: str, ignore_terms: list = None, high_to_low: bool = True, truncate_name: bool = True):
+def get_ordered_numbers(r: dict, search_term: str, ignore_terms: list = None, high_to_low: bool = True,
+                        truncate_name: bool = True):
     item_dict = {}
 
     for item in r['playerstats']['stats']:
@@ -165,8 +165,9 @@ if steamid and key:
 
         text_0 = bar_chart_kills.mark_text(baseline='bottom', align='center', dy=-3).encode(text='kills')
 
-        tmp_chart_0 = alt.layer(bar_chart_kills, text_0).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(
-            fontSize=20).configure_view(stroke='transparent')
+        tmp_chart_0 = alt.layer(bar_chart_kills, text_0).configure_axis(
+            labelFontSize=12, titleFontSize=16).configure_title(fontSize=20).configure_view(
+            stroke='transparent')
 
         st.altair_chart(tmp_chart_0, use_container_width=True)
     # ------------------------------------------------------------ #
@@ -230,8 +231,9 @@ if steamid and key:
 
     text_2 = bar_chart_weapon.mark_text(baseline='bottom', align='center', size=15, dy=-5).encode(text='value_numbers')
 
-    tmp_chart_2 = alt.layer(bar_chart_weapon, text_2).configure_axis(labelFontSize=12, titleFontSize=16).configure_title(
-        fontSize=20).configure_view(stroke='transparent').configure_legend(orient='bottom')
+    tmp_chart_2 = alt.layer(bar_chart_weapon, text_2).configure_axis(
+        labelFontSize=12, titleFontSize=16).configure_title(fontSize=20).configure_view(
+            stroke='transparent').configure_legend(orient='bottom')
 
     st.altair_chart(tmp_chart_2, use_container_width=True)
     # ----------------------------------------------------------------------------- #
@@ -250,7 +252,7 @@ if steamid and key:
     kd_df = pd.DataFrame(list(kd_dict.items()), columns=['name', 'value'])
     kd_df.head()
 
-    bar_chart_kd = alt.Chart(kd_df, title=f'Kills vs Deaths').mark_bar(opacity=0.8, size=100).encode(
+    bar_chart_kd = alt.Chart(kd_df, title='Kills vs Deaths').mark_bar(opacity=0.8, size=100).encode(
         alt.Y('value:Q', title='',),
         alt.X('name', sort=['value'], title='', axis=None),
         color=alt.Color('name', scale=alt.Scale(range=[orange, blue]))
